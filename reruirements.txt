@@ -1,0 +1,13 @@
+pypdf
+chromadb
+langchain
+langchain-google-genai
+langchain-community
+python-dotenv
+pymupdf
+langchain-docling
+docling-core
+langchain-huggingface
+langchain-chroma
+chromadb
+langchain-core
