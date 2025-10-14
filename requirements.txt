@@ -11,3 +11,7 @@ langchain-huggingface
 langchain-chroma
 chromadb
 langchain-core
+google-generativeai 
+langchain-google-genai
+google-search-results
+tavily-python

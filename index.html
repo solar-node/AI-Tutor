@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tutor | Personalized Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 8rem); /* Full height minus header and input */
+        }
+        .welcome-screen {
+            background: #f0f2f5;
+        }
+        .upload-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .upload-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chat-bubble {
+            max-width: 75%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem;
+        }
+        .user-bubble {
+            background-color: #3b82f6;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .ai-bubble {
+            background-color: #e5e7eb;
+            color: #1f2937;
+            border-bottom-left-radius: 0.25rem;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md p-4 flex justify-between items-center z-10">
+        <h1 class="text-2xl font-bold text-blue-600">
+            <i class="fas fa-brain mr-2"></i>AI Tutor
+        </h1>
+        <button id="new-session-btn" class="text-gray-600 hover:text-blue-600 transition">
+            <i class="fas fa-plus-circle mr-2"></i>New Session
+        </button>
+    </header>
+
+    <main class="flex-grow">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="p-8 flex flex-col items-center justify-center text-center h-full">
+            <h2 class="text-4xl font-bold text-gray-800 mb-4">Your Personalized Learning Partner</h2>
+            <p class="text-lg text-gray-600 mb-12 max-w-2xl">Start a conversation, or upload a document to begin a focused learning session.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+                <!-- Book Upload Card -->
+                <div class="upload-card bg-white p-8 rounded-lg shadow-lg text-center">
+                    <i class="fas fa-book-open text-5xl text-blue-500 mb-4"></i>
+                    <h3 class="text-2xl font-semibold mb-2">Upload a Book</h3>
+                    <p class="text-gray-500 mb-6">Learn chapter by chapter from your favorite textbook.</p>
+                    <label for="book-upload" class="cursor-pointer bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-600 transition w-full inline-block">
+                        <i class="fas fa-upload mr-2"></i> Choose PDF
+                    </label>
+                    <input type="file" id="book-upload" class="hidden" accept=".pdf">
+                </div>
+
+                <!-- Research Paper Upload Card -->
+                <div class="upload-card bg-white p-8 rounded-lg shadow-lg text-center">
+                    <i class="fas fa-file-alt text-5xl text-purple-500 mb-4"></i>
+                    <h3 class="text-2xl font-semibold mb-2">Upload a Paper</h3>
+                    <p class="text-gray-500 mb-6">Dive deep into research papers and complex articles.</p>
+                     <label for="paper-upload" class="cursor-pointer bg-purple-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-purple-600 transition w-full inline-block">
+                        <i class="fas fa-upload mr-2"></i> Choose PDF
+                    </label>
+                    <input type="file" id="paper-upload" class="hidden" accept=".pdf">
+                </div>
+            </div>
+             <p class="text-gray-500 mt-12">Or simply start chatting below for general questions.</p>
+        </div>
+
+        <!-- Chat Screen -->
+        <div id="chat-screen" class="hidden chat-container p-4">
+            <div id="chat-header" class="text-center mb-4 p-2 bg-white rounded-lg shadow-sm">
+                <p class="font-semibold text-gray-700">Chatting about: <span id="chat-topic" class="text-blue-600">General Knowledge</span></p>
+            </div>
+            <div id="chat-messages" class="flex-grow overflow-y-auto space-y-4 p-4">
+                <!-- Chat messages will be appended here -->
+                <div class="flex justify-start">
+                    <div class="ai-bubble chat-bubble">
+                        Hello! I'm your AI Tutor. Ask me anything, or upload a document to get started.
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center">
+                <input type="text" id="chat-input" class="w-full border rounded-full py-3 px-6 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ask a question...">
+                <button id="send-btn" class="bg-blue-600 text-white rounded-full p-3 ml-3 hover:bg-blue-700 transition focus:outline-none">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const bookUpload = document.getElementById('book-upload');
+        const paperUpload = document.getElementById('paper-upload');
+        const chatTopic = document.getElementById('chat-topic');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const newSessionBtn = document.getElementById('new-session-btn');
+
+        // Function to handle file uploads
+        function handleFileUpload(event, documentType) {
+            const file = event.target.files[0];
+            if (file) {
+                console.log(`${documentType} uploaded:`, file.name);
+                
+                // Switch to chat screen
+                welcomeScreen.classList.add('hidden');
+                chatScreen.classList.remove('hidden');
+                
+                // Update chat topic
+                chatTopic.textContent = file.name;
+                
+                // Clear initial message and add a new one
+                chatMessages.innerHTML = '';
+                addMessage('ai', `Great! I'm ready to help you with "${file.name}". What would you like to know first?`);
+
+                // Here you would typically send the file to your backend for processing.
+                // For this frontend-only demo, we just simulate the UI change.
+            }
+        }
+
+        // Function to add a message to the chat window
+        function addMessage(sender, text) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.classList.add('flex', sender === 'user' ? 'justify-end' : 'justify-start');
+
+            const bubble = document.createElement('div');
+            bubble.classList.add('chat-bubble', sender === 'user' ? 'user-bubble' : 'ai-bubble');
+            bubble.textContent = text;
+            
+            messageWrapper.appendChild(bubble);
+            chatMessages.appendChild(messageWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // Function to handle sending a message
+        function sendMessage() {
+            const userText = chatInput.value.trim();
+            if (userText) {
+                addMessage('user', userText);
+                chatInput.value = '';
+
+                // Simulate AI response
+                setTimeout(() => {
+                    addMessage('ai', `Thinking about "${userText}"... This is a placeholder response from the AI Tutor.`);
+                }, 1000);
+            }
+        }
+        
+        // Event Listeners
+        bookUpload.addEventListener('change', (e) => handleFileUpload(e, 'Book'));
+        paperUpload.addEventListener('change', (e) => handleFileUpload(e, 'Paper'));
+
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        newSessionBtn.addEventListener('click', () => {
+            // Reset to the welcome screen
+            welcomeScreen.classList.remove('hidden');
+            chatScreen.classList.add('hidden');
+            chatTopic.textContent = 'General Knowledge';
+            chatMessages.innerHTML = `
+                <div class="flex justify-start">
+                    <div class="ai-bubble chat-bubble">
+                        Hello! I'm your AI Tutor. Ask me anything, or upload a document to get started.
+                    </div>
+                </div>`;
+            bookUpload.value = ''; // Clear file input
+            paperUpload.value = ''; // Clear file input
+        });
+
+    </script>
+</body>
+</html>
