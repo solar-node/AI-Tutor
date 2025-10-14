@@ -5,16 +5,16 @@ from dotenv import load_dotenv
 # Setting up the envirinment
 load_dotenv()
 
+from langchain import hub
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_docling import DoclingLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.community.vectorstores import FAISS
-from docling import DocumentConverter
+from langchain.text_splitter import MarkdownHeaderTextSplitter
+from langchain_community.vectorstores import FAISS
+from docling.document_converter import DocumentConverter
 from langchain.tools.retriever import create_retriever_tool
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.agents import Tool, create_react_agent, AgentExecutor
-from langchain import hub
 from langchain_core.messages import HumanMessage, AIMessage
 
 
@@ -31,7 +31,7 @@ def load_llm():
 # Embedding model
 @st.cache_resource
 def load_embedding_model():
-    HuggingFaceEndpointEmbeddings(
+    return HuggingFaceEndpointEmbeddings(
         model = "BAAI/bge-small-en-v1.5"
     )
 
@@ -45,7 +45,7 @@ embedding_model = load_embedding_model()
 
 
 # Streamlit will only rerun it if uploaded file's details change
-@st.chache_resource
+@st.cache_resource
 def process_uploaded_book(uploaded_file):
     # Read the uploaded file's bytes and save it temporarily
     bytes_data = uploaded_file.getvalue()
@@ -68,7 +68,7 @@ def process_uploaded_book(uploaded_file):
 
     markdown_splitter = MarkdownHeaderTextSplitter(
         headers_to_split_on = headers_to_split_on,
-        strip_header = False
+        strip_headers = False
     )
     chunks = markdown_splitter.split_text(full_markdown_content)
 
@@ -78,6 +78,8 @@ def process_uploaded_book(uploaded_file):
 
     os.remove(file_path) # Clean up temperory file
     return vector_store
+
+
 
 @st.cache_resource
 def create_tutor_agent(vector_store):
@@ -129,7 +131,80 @@ def create_tutor_agent(vector_store):
         verbose = True,
         handle_parsing_errors = True
     )
+    
+    return agent_executor
 
+
+
+# Streamlit UI 
+st.title("📚 AI Tutor from Your Textbook")
+st.write("Upload a pdf document in the sidebar and start asking questions.")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "agent_executor" not in st.session_state:
+    st.session_state.agent_executor = None
+
+with st.sidebar:
+    st.header("Your Document")
+    uploaded_file = st.file_uploader("Upload your Textbook", type="pdf", label_visibility="collapsed")
+
+    if uploaded_file:
+        if st.session_state.agent_executor is None:
+            with st.spinner("Processing your document...This may take a moment."):
+                vector_store = process_uploaded_book(uploaded_file)
+                st.session_state.agent_executor = create_tutor_agent(vector_store)
+            
+            st.success("Document processed! You can now ask questions...")
+
+
+if st.session_state.agent_executor:
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+prompt = st.chat_input("Ask a question about your book")
+
+if prompt:
+    st.session_state.messages.append({
+        "role" : "user",
+        "content" : prompt
+    })
+
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            # history = [
+            #     HumanMessage(
+            #         content = msg["content"]) if msg["role"] == "user"
+            #         else  AIMessage(content = msg["content"])
+            #         for message in st.session_state.messages[:-1]
+            # ]
+
+            history = []
+
+            # Go through all previous messages except the latest one
+            for msg in st.session_state.messages[:-1]:
+                if msg["role"] == "user":
+                    history.append(HumanMessage(content=msg["content"]))
+                else:
+                    history.append(AIMessage(content=msg["content"]))
+            
+            response = st.session_state.agent_executor.invoke({
+                "input" : prompt,
+                "chat_history" : history
+            })
+
+            tutor_response = response['output']
+            st.markdown(tutor_response)
+    
+    st.session_state.messages.append({"role" : "assistant", "content" : tutor_response})
+
+else:
+    st.info("Please upload a pdf document in the sidebar to begin.")
 
 
 
