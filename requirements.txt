@@ -16,4 +16,3 @@ langchain-google-genai
 google-search-results
 tavily-python
 opencv-python-headless
-libgl1
