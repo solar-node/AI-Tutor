@@ -59,7 +59,6 @@ def process_uploaded_book(uploaded_file):
  
    
     converter = DocumentConverter()
-    converter.disable_ocr_reader()
     doc = converter.convert(file_path).document
     full_markdown_content = doc.export_to_markdown()
 
