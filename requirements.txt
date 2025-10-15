@@ -16,3 +16,4 @@ langchain-google-genai
 google-search-results
 tavily-python
 opencv-python-headless
+streamlit>=1.38.0
