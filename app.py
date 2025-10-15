@@ -57,9 +57,8 @@ def process_uploaded_book(uploaded_file):
     st.write("converting PDF to structured markdown using docling")
 
  
+    os.environ["RAPID_OCR_MODEL_DIR"] = "/tmp/rapidocr_models"
     converter = DocumentConverter()
-    converter._default_ocr_engine = None 
-    converter.disable_table_reader = True
     doc = converter.convert(file_path).document
     full_markdown_content = doc.export_to_markdown()
 
