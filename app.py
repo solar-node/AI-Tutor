@@ -1,4 +1,6 @@
 import os
+os.environ["RAPID_OCR_MODEL_DIR"] = "/tmp/rapidocr_models"
+
 import streamlit as st
 from dotenv import load_dotenv
 
@@ -16,7 +18,6 @@ from langchain.tools.retriever import create_retriever_tool
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.agents import Tool, create_react_agent, AgentExecutor
 from langchain_core.messages import HumanMessage, AIMessage
-
 
 
 # Initializing the models
@@ -57,7 +58,7 @@ def process_uploaded_book(uploaded_file):
     st.write("converting PDF to structured markdown using docling")
 
  
-    os.environ["RAPID_OCR_MODEL_DIR"] = "/tmp/rapidocr_models"
+   
     converter = DocumentConverter()
     doc = converter.convert(file_path).document
     full_markdown_content = doc.export_to_markdown()
