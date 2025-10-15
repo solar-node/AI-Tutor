@@ -82,9 +82,9 @@ def process_uploaded_book(uploaded_file):
 
 
 @st.cache_resource
-def create_tutor_agent(vector_store):
+def create_tutor_agent(_vector_store):
     """"Creates the AI tutor agent with its tools"""
-    simple_retriever = vector_store.as_retriever(search_kwargs = {"k" : 5})
+    simple_retriever = _vector_store.as_retriever(search_kwargs = {"k" : 5})
 
     textbook_search_tool = create_retriever_tool(
         simple_retriever,
