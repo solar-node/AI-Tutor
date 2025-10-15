@@ -18,3 +18,4 @@ tavily-python
 opencv-python-headless
 streamlit>=1.38.0
 faiss-cpu
+faiss-gpu
