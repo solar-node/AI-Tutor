@@ -1,5 +1,7 @@
 import os
-os.environ["RAPID_OCR_MODEL_DIR"] = "/tmp/rapidocr_models"
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
+import pymupdf
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -10,10 +12,8 @@ load_dotenv()
 from langchain import hub
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from langchain_docling import DoclingLoader
-from langchain.text_splitter import MarkdownHeaderTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from docling.document_converter import DocumentConverter
 from langchain.tools.retriever import create_retriever_tool
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.agents import Tool, create_react_agent, AgentExecutor
@@ -53,31 +53,24 @@ def process_uploaded_book(uploaded_file):
     with open(file_path, "wb") as file:
         file.write(bytes_data)
 
-    # Converting pdf to markdown using docling
-    st.write("converting PDF to structured markdown using docling")
+    st.write("Extracting text from PDF using PyMuPDF...")
+    full_text_content = ""
+    with pymupdf.open(file_path) as doc:
+        for page in doc:
+            full_text_content += page.get_text()
 
- 
-   
-    converter = DocumentConverter()
-    doc = converter.convert(file_path).document
-    full_markdown_content = doc.export_to_markdown()
-
-    # Split the markdown content based on headers
-    headers_to_split_on = [
-        ("## PART", "Part"),
-        ("## CHAPTER", "Chapter"),
-        ("## ", "Section"),
-    ]
-
-    markdown_splitter = MarkdownHeaderTextSplitter(
-        headers_to_split_on = headers_to_split_on,
-        strip_headers = False
+    # Split the text into chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
     )
-    chunks = markdown_splitter.split_text(full_markdown_content)
-
-    # Create the in-memory vector store
-    st.write("Creating in memory vector store")
-    vector_store = FAISS.from_documents(chunks, embedding_model)
+    chunks = text_splitter.split_text(full_text_content)
+    
+    # Create the in-memory vector store using FAISS.from_texts
+    st.write("Creating in-memory vector store...")
+    # Use from_texts because we now have a list of simple text strings
+    vector_store = FAISS.from_texts(texts=chunks, embedding=embedding_model)
 
     os.remove(file_path) # Clean up temperory file
     return vector_store
