@@ -55,7 +55,10 @@ def process_uploaded_book(uploaded_file):
 
     # Converting pdf to markdown using docling
     st.write("converting PDF to structured markdown using docling")
+
+ 
     converter = DocumentConverter()
+    converter._default_ocr_engine = None 
     doc = converter.convert(file_path).document
     full_markdown_content = doc.export_to_markdown()
 
