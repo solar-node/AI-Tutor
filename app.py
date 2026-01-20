@@ -17,7 +17,8 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.agents import create_structured_chat_agent, AgentExecutor
+from langchain.agents.structured_chat.base import create_structured_chat_agent
+from langchain.agents import AgentExecutor 
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Initializing the models
@@ -149,7 +150,7 @@ def create_tutor_agent(_vector_store):
         #Move agent_scratchpad inside the human message string
         ("human", "{input}\n\n{agent_scratchpad}"), 
     ])
-    
+
     agent = create_structured_chat_agent(llm, tools, prompt)
 
     agent_executor = AgentExecutor(
