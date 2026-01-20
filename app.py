@@ -217,7 +217,7 @@ if prompt:
                 else:
                     history.append(AIMessage(content=msg["content"]))
             
-            response = st.session_state.agent_executor.invoke(prompt)
+            response = st.session_state.agent_executor.invoke({"input": prompt})
 
             tutor_response = response['output']
             st.markdown(tutor_response)
