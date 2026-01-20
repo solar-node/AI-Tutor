@@ -18,7 +18,8 @@ from langchain_community.utilities import SerpAPIWrapper
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.agents import create_agent
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts.chat import MessagesPlaceholder
 
 # Initializing the models
 # @st.cache_resource - To prevent reinitializing on every interaction
