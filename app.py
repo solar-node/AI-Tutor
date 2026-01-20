@@ -86,10 +86,22 @@ def create_tutor_agent(_vector_store):
     """"Creates the AI tutor agent with its tools"""
     simple_retriever = _vector_store.as_retriever(search_kwargs = {"k" : 5})
 
-    textbook_search_tool = create_retriever_tool(
-        simple_retriever,
-        name = "textbook_search",
-        description = "This is the primary tool for answering questions. Use it to search the user's uploaed textbook for specific topics, definitions, and concepts. Always use this tool."
+    def textbook_search(query: str) -> str:
+        """
+        Search the uploaded textbook vector store
+        and return combined text of relevant chunks.
+        """
+        docs = simple_retriever.get_relevant_documents(query)
+        # Join the retrieved content into one string
+        return "\n\n".join([doc.page_content for doc in docs])  
+  
+    textbook_search_tool = Tool(
+        name="textbook_search",
+        func=textbook_search,
+        description=(
+            "Searches the uploaded textbook for relevant content "
+            "about the user's question, definitions, and concepts."
+        )
     )
 
     search = SerpAPIWrapper()
