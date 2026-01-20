@@ -16,9 +16,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.tools import tool
-from langchain.agents import initialize_agent, AgentType
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.pydantic_v1 import BaseModel 
+from langchain.agents import create_structured_chat_agent, AgentExecutor
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Initializing the models
 # @st.cache_resource - To prevent reinitializing on every interaction
@@ -110,38 +110,53 @@ def create_tutor_agent(_vector_store):
 
     # System prompt
     system_message = """
-        You are an expert AI Tutor. Your personality is helpful, encouraging, and patient. Your primary goal is to help students understand concepts from their uploaded document.
+        You are an expert AI Tutor. Your personality is helpful, encouraging, and patient. 
+        Your primary goal is to help students understand concepts from their uploaded document.
         
         **Your Operational Rules:**
+        1.  **Prioritize the Textbook:** When a student asks a question, your first action **MUST** be to use the `textbook_search` tool.
+        2.  **Web Search as a Fallback:** Only use `web_search` if the textbook is insufficient or for real-world examples.
+        3.  **Synthesize, Don't Just Report:** Explain concepts simply.
+        4.  **Engage the Student:** End with a follow-up question like "Does that make sense?".
+        5.  **Acknowledge Your Source:** Mention if you used web search.
+
+        ----
+        **TOOL USE INSTRUCTIONS:**
+        You have access to the following tools:
         
-        1.  **Prioritize the Textbook:** When a student asks a question, your first action **MUST** be to use the `textbook_search` tool. This is your primary source of truth.
-        2.  **Web Search as a Fallback:** You should only use the `web_search` tool in two specific situations:
-            * If the `textbook_search` tool returns no relevant information or you determine the answer is insufficient.
-            * If the student explicitly asks for real-world examples, current events, or information clearly outside the scope of the textbook.
-        3.  **Synthesize, Don't Just Report:** Never just copy-paste the output from a tool. Always synthesize the information into a clear, easy-to-understand explanation. Use analogies and simple terms.
-        4.  **Engage the Student:** After explaining a concept, always end your response with a follow-up question to check for understanding or encourage further discussion. For example: "Does that make sense?" or "What part of that would you like to explore further?".
-        5.  **Acknowledge Your Source:** If you use the web search tool, briefly mention it. For example: "That's a great question that goes beyond the textbook. According to a quick search...
+        {tools}
+        
+        To use a tool, please use the following format:
+        
+        ```
+        Thought: Do I need to use a tool? Yes
+        Action: the action to take, should be one of [{tool_names}]
+        Action Input: the input to the action
+        ```
+        
+        When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
+        
+        ```
+        Thought: Do I need to use a tool? No
+        Final Answer: [your response here]
+        ```
+        """
 
-        FORMATTING INSTRUCTIONS:
-            To answer the user's request, you must use the following format:
+    # 2. Create the Chat Prompt Template
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_message),
+        MessagesPlaceholder("chat_history", optional=True),
+        #Move agent_scratchpad inside the human message string
+        ("human", "{input}\n\n{agent_scratchpad}"), 
+    ])
+    
+    agent = create_structured_chat_agent(llm, tools, prompt)
 
-            Action: the action to take, should be one of [textbook_search, web_search]
-            Action Input: the input to the action
-            Observation: the result of the action
-            ... (this Thought/Action/Action Input/Observation can repeat N times)
-            Thought: I now know the final answer
-            Final Answer: the final answer to the original input question
-    """
-
-    agent_executor = initialize_agent(
-        tools=tools,
-        llm=llm,
-        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True,
-        agent_kwargs={
-            "prefix": system_message
-        },
-        handle_parsing_errors=True
+    agent_executor = AgentExecutor(
+        agent=agent, 
+        tools=tools, 
+        verbose=True, 
+        handle_parsing_errors=True # Handles Gemini's chatty errors
     )
     
     return agent_executor
