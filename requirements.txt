@@ -10,3 +10,4 @@ google-search-results
 langchain-docling
 docling-core
 langsmith>=0.1.99
+langchain-text-splitters
