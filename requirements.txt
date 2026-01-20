@@ -9,3 +9,4 @@ faiss-cpu
 google-search-results 
 langchain-docling
 docling-core
+langchainhub
