@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Setting up the envirinment
 load_dotenv()
 
-from langchain import hub
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -23,7 +23,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from langchain_core.pydantic_v1 import BaseModel as CoreBaseModel, Field
 from langchain.tools import tool 
-
 
 
 # Initializing the models
@@ -103,7 +102,11 @@ def create_tutor_agent(_vector_store):
     tools = [textbook_search_tool, web_search_tool]
 
     # Base prompt
-    base_prompt = hub.pull("hwchase17/react-chat")
+    base_prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a helpful AI tutor that reasons step by step."),
+        ("human", "{input}"),
+        ("assistant", "{agent_scratchpad}")
+    ])
 
     # System prompt
     system_message = """

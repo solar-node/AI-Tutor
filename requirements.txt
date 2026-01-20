@@ -9,4 +9,4 @@ faiss-cpu
 google-search-results 
 langchain-docling
 docling-core
-langchain-hub
+langsmith>=0.1.99
