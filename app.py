@@ -154,7 +154,6 @@ def create_tutor_agent(_vector_store):
         model=llm,
         tools=tools,
         system_prompt=system_message,
-        verbose=True
     )
         
     return agent_executor
