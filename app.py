@@ -15,13 +15,14 @@ from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.utilities import SerpAPIWrapper
-from langchain.agents import Tool, create_react_agent, AgentExecutor
+from langchain.tools import tool
+from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.messages import HumanMessage, AIMessage
 
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from langchain_core.pydantic_v1 import BaseModel as CoreBaseModel, Field
-from langchain.tools import tool 
+ # keep only one import of 'tool'
 
 
 # Initializing the models
@@ -85,32 +86,25 @@ def create_tutor_agent(_vector_store):
     """"Creates the AI tutor agent with its tools"""
     simple_retriever = _vector_store.as_retriever(search_kwargs = {"k" : 5})
 
+    @tool("textbook_search", return_direct=True)
     def textbook_search(query: str) -> str:
         """
         Search the uploaded textbook vector store
         and return combined text of relevant chunks.
         """
         docs = simple_retriever.get_relevant_documents(query)
-        # Join the retrieved content into one string
-        return "\n\n".join([doc.page_content for doc in docs])  
-  
-    textbook_search_tool = Tool(
-        name="textbook_search",
-        func=textbook_search,
-        description=(
-            "Searches the uploaded textbook for relevant content "
-            "about the user's question, definitions, and concepts."
-        )
-    )
+        return "\n\n".join(doc.page_content for doc in docs)
 
-    search = SerpAPIWrapper()
-    web_search_tool = Tool(
-        name = "web_search",
-        func = search.run,
-        description = "A useful tool for searching the internet to answer questions about current events, real-world examples, or topics not found in the user's uploaded document."
-    )
+    @tool("web_search", return_direct=True)
+    def web_search(query: str) -> str:
+        """
+        Search the internet for current events, real-world examples,
+        or topics not found in the uploaded document.
+        """
+        search = SerpAPIWrapper()
+        return search.run(query)
 
-    tools = [textbook_search_tool, web_search_tool]
+    tools = [textbook_search, web_search]
 
     # Base prompt
     base_prompt = ChatPromptTemplate.from_messages([
