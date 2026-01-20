@@ -14,7 +14,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain.tools.retriever import create_retriever_tool
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.agents import Tool, create_react_agent, AgentExecutor
 from langchain_core.messages import HumanMessage, AIMessage
