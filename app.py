@@ -89,6 +89,9 @@ def create_tutor_agent(_vector_store):
         and return combined text of relevant chunks.
         """
         docs = simple_retriever.get_relevant_documents(query)
+        if not docs:
+           return "NO_RELEVANT_TEXT_FOUND"
+
         return "\n\n".join(doc.page_content for doc in docs)
 
     @tool("web_search")
