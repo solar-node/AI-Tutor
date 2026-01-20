@@ -17,8 +17,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.agents.structured_chat.base import create_structured_chat_agent
-from langchain.agents import AgentExecutor 
+from langchain.agents import create_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Initializing the models
@@ -150,16 +149,13 @@ def create_tutor_agent(_vector_store):
         #Move agent_scratchpad inside the human message string
         ("human", "{input}\n\n{agent_scratchpad}"), 
     ])
-
-    agent = create_structured_chat_agent(llm, tools, prompt)
-
-    agent_executor = AgentExecutor(
-        agent=agent, 
-        tools=tools, 
-        verbose=True, 
-        handle_parsing_errors=True # Handles Gemini's chatty errors
+    agent_executor = create_agent(
+        model=llm,
+        tools=tools,
+        system_prompt=system_message,
+        verbose=True
     )
-    
+        
     return agent_executor
 
 
