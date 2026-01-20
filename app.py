@@ -9,21 +9,16 @@ from dotenv import load_dotenv
 # Setting up the envirinment
 load_dotenv()
 
-from langchain_core.prompts import ChatPromptTemplate
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.tools import tool
-from langchain.agents import create_react_agent, AgentExecutor
+from langchain.agents import initialize_agent, AgentType
 from langchain_core.messages import HumanMessage, AIMessage
-
-from typing import List, Optional
-from pydantic import BaseModel, Field
-from langchain_core.pydantic_v1 import BaseModel as CoreBaseModel, Field
- # keep only one import of 'tool'
-
+from langchain_core.pydantic_v1 import BaseModel 
 
 # Initializing the models
 # @st.cache_resource - To prevent reinitializing on every interaction
@@ -86,7 +81,7 @@ def create_tutor_agent(_vector_store):
     """"Creates the AI tutor agent with its tools"""
     simple_retriever = _vector_store.as_retriever(search_kwargs = {"k" : 5})
 
-    @tool("textbook_search", return_direct=True)
+    @tool("textbook_search")
     def textbook_search(query: str) -> str:
         """
         Search the uploaded textbook vector store
@@ -95,7 +90,7 @@ def create_tutor_agent(_vector_store):
         docs = simple_retriever.get_relevant_documents(query)
         return "\n\n".join(doc.page_content for doc in docs)
 
-    @tool("web_search", return_direct=True)
+    @tool("web_search")
     def web_search(query: str) -> str:
         """
         Search the internet for current events, real-world examples,
@@ -106,12 +101,12 @@ def create_tutor_agent(_vector_store):
 
     tools = [textbook_search, web_search]
 
-    # Base prompt
-    base_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a helpful AI tutor that reasons step by step."),
-        ("human", "{input}"),
-        ("assistant", "{agent_scratchpad}")
-    ])
+    # # Base prompt
+    # base_prompt = ChatPromptTemplate.from_messages([
+    #     ("system", "You are a helpful AI tutor that reasons step by step."),
+    #     ("human", "{input}"),
+    #     ("assistant", "{agent_scratchpad}")
+    # ])
 
     # System prompt
     system_message = """
@@ -126,19 +121,27 @@ def create_tutor_agent(_vector_store):
         3.  **Synthesize, Don't Just Report:** Never just copy-paste the output from a tool. Always synthesize the information into a clear, easy-to-understand explanation. Use analogies and simple terms.
         4.  **Engage the Student:** After explaining a concept, always end your response with a follow-up question to check for understanding or encourage further discussion. For example: "Does that make sense?" or "What part of that would you like to explore further?".
         5.  **Acknowledge Your Source:** If you use the web search tool, briefly mention it. For example: "That's a great question that goes beyond the textbook. According to a quick search...
+
+        FORMATTING INSTRUCTIONS:
+            To answer the user's request, you must use the following format:
+
+            Action: the action to take, should be one of [textbook_search, web_search]
+            Action Input: the input to the action
+            Observation: the result of the action
+            ... (this Thought/Action/Action Input/Observation can repeat N times)
+            Thought: I now know the final answer
+            Final Answer: the final answer to the original input question
     """
 
-    agent = create_react_agent(
-        llm,
-        tools,
-        base_prompt
-    )
-
-    agent_executor = AgentExecutor(
-        agent = agent,
-        tools = tools,
-        verbose = True,
-        handle_parsing_errors = True
+    agent_executor = initialize_agent(
+        tools=tools,
+        llm=llm,
+        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        agent_kwargs={
+            "prefix": system_message
+        },
+        handle_parsing_errors=True
     )
     
     return agent_executor
