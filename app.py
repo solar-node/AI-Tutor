@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Setting up the envirinment
 load_dotenv()
 
-from langchainhub import hub
+from langchain import hub
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
