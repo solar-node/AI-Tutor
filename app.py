@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Setting up the envirinment
 load_dotenv()
 
-from langchain import hub
+from langchainhub import hub
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -18,6 +18,13 @@ from langchain.tools.retriever import create_retriever_tool
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.agents import Tool, create_react_agent, AgentExecutor
 from langchain_core.messages import HumanMessage, AIMessage
+
+from typing import List, Optional
+from pydantic import BaseModel, Field
+from langchain_core.pydantic_v1 import BaseModel as CoreBaseModel, Field
+from langchain.tools import tool 
+
+
 
 # Initializing the models
 # @st.cache_resource - To prevent reinitializing on every interaction
@@ -41,8 +48,6 @@ embedding_model = load_embedding_model()
 ## Backend Logic
 
 # Document processing
-
-
 
 # Streamlit will only rerun it if uploaded file's details change
 @st.cache_resource
