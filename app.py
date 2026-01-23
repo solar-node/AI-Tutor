@@ -106,7 +106,7 @@ Your primary goal is to help students understand concepts from their uploaded do
     agent_executor = create_agent(
         model=llm,
         tools=tools,
-        prompt=system_message,  # Use 'prompt' parameter
+        system_prompt=system_message,  # Use 'prompt' parameter
     )
 
     return agent_executor
