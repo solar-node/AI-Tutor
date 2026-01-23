@@ -5,7 +5,6 @@ import pymupdf
 import streamlit as st
 from dotenv import load_dotenv
 
-# Setting up the environment
 load_dotenv()
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -14,33 +13,31 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.tools import tool
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langgraph.prebuilt import create_react_agent  # Changed import
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain.agents import create_agent  # Updated import
 
-# Initializing the models
+
 @st.cache_resource
 def load_llm():
     return ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash",  # Updated model name
+        model="gemini-2.0-flash",
         temperature=0.5
     )
 
-# Embedding model
+
 @st.cache_resource
 def load_embedding_model():
     return HuggingFaceEndpointEmbeddings(
         model="BAAI/bge-small-en-v1.5"
     )
 
+
 llm = load_llm()
 embedding_model = load_embedding_model()
 
-## Backend Logic
 
-# Document processing
 @st.cache_resource
 def process_uploaded_book(uploaded_file):
-    # Read the uploaded file's bytes and save it temporarily
     bytes_data = uploaded_file.getvalue()
     file_path = os.path.join("./", uploaded_file.name)
     with open(file_path, "wb") as file:
@@ -52,7 +49,6 @@ def process_uploaded_book(uploaded_file):
         for page in doc:
             full_text_content += page.get_text()
 
-    # Split the text into chunks
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200,
@@ -60,11 +56,10 @@ def process_uploaded_book(uploaded_file):
     )
     chunks = text_splitter.split_text(full_text_content)
 
-    # Create the in-memory vector store using FAISS.from_texts
     st.write("Creating in-memory vector store...")
     vector_store = FAISS.from_texts(texts=chunks, embedding=embedding_model)
 
-    os.remove(file_path)  # Clean up temporary file
+    os.remove(file_path)
     return vector_store
 
 
@@ -80,7 +75,7 @@ def create_tutor_agent(_vector_store):
         and return combined text of relevant chunks.
         Use this tool FIRST for any question about the textbook content.
         """
-        docs = simple_retriever.invoke(query)  # Changed from get_relevant_documents
+        docs = simple_retriever.invoke(query)
         if not docs:
             return "NO_RELEVANT_TEXT_FOUND"
         return "\n\n".join(doc.page_content for doc in docs)
@@ -97,7 +92,6 @@ def create_tutor_agent(_vector_store):
 
     tools = [textbook_search, web_search]
 
-    # System prompt
     system_message = """You are an expert AI Tutor. Your personality is helpful, encouraging, and patient. 
 Your primary goal is to help students understand concepts from their uploaded document.
 
@@ -108,11 +102,11 @@ Your primary goal is to help students understand concepts from their uploaded do
 4. **Engage the Student:** End with a follow-up question like "Does that make sense?".
 5. **Acknowledge Your Source:** Mention if you used web search."""
 
-    # Use create_react_agent from langgraph.prebuilt
-    agent_executor = create_react_agent(
+    # Use the new create_agent from langchain.agents
+    agent_executor = create_agent(
         model=llm,
         tools=tools,
-        state_modifier=system_message,  \
+        prompt=system_message,  # Use 'prompt' parameter
     )
 
     return agent_executor
@@ -148,7 +142,6 @@ if st.session_state.agent_executor:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Chat input
     prompt = st.chat_input("Ask a question about your book")
 
     if prompt:
@@ -162,7 +155,7 @@ if st.session_state.agent_executor:
 
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                # Build message history for the agent
+                # Build message history
                 history = []
                 for msg in st.session_state.messages[:-1]:
                     if msg["role"] == "user":
@@ -173,17 +166,18 @@ if st.session_state.agent_executor:
                 # Add current message
                 history.append(HumanMessage(content=prompt))
 
-                # Invoke with the new format - using "messages" key
+                # Invoke with messages
                 response = st.session_state.agent_executor.invoke({
                     "messages": history
                 })
 
-                # The last message in the list is the AI response
+                # Extract response
                 if "messages" in response:
                     last_message = response["messages"][-1]
                     tutor_response = last_message.content
+                elif "output" in response:
+                    tutor_response = response["output"]
                 else:
-                    # Fallback for different response structures
                     tutor_response = str(response)
 
                 st.markdown(tutor_response)
