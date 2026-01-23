@@ -8,3 +8,4 @@ langchain-community
 langgraph
 faiss-cpu
 google-search-results
+langchain-groq
