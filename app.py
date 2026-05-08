@@ -14,7 +14,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.utilities import SerpAPIWrapper
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.agents import create_agent  # Updated import
+from langgraph.prebuilt import create_react_agent
 
 
 @st.cache_resource
@@ -108,6 +108,8 @@ Your primary goal is to help students understand concepts from their uploaded do
         tools=tools,
         system_prompt=system_message,  # Use 'prompt' parameter
     )
+    agent_executor = create_react_agent(llm, tools, 
+                                       state_modifier=system_message)
 
     return agent_executor
 
