@@ -102,13 +102,8 @@ Your primary goal is to help students understand concepts from their uploaded do
 4. **Engage the Student:** End with a follow-up question like "Does that make sense?".
 5. **Acknowledge Your Source:** Mention if you used web search."""
 
-    # Use the new create_agent from langchain.agents
-    agent_executor = create_agent(
-        model=llm,
-        tools=tools,
-        system_prompt=system_message,  # Use 'prompt' parameter
-    )
-    agent_executor = create_react_agent(llm, tools, 
+    agent_executor = create_react_agent(llm, 
+                                        tools, 
                                        state_modifier=system_message)
 
     return agent_executor
