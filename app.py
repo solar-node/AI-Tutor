@@ -104,7 +104,7 @@ Your primary goal is to help students understand concepts from their uploaded do
 
     agent_executor = create_react_agent(llm, 
                                         tools, 
-                                       state_modifier=system_message)
+                                       prompt=system_message)
 
     return agent_executor
 
